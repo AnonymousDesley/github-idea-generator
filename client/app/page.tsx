@@ -80,7 +80,7 @@ export default function Home() {
               <input
                 value={userState.interests}
                 onChange={e => setUserState({ ...userState, interests: e.target.value })}
-                className="w-full bg-surface border border-border p-6 rounded-xl text-xl outline-none focus:border-primary transition-all placeholder:text-text-muted/20"
+                className="w-full bg-surface border border-border p-6 pr-48 rounded-xl text-xl outline-none focus:border-primary transition-all placeholder:text-text-muted/20"
                 placeholder="Target Protocol (e.g. AI Agents, DeFi...)"
               />
               <button
