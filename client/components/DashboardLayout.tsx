@@ -18,17 +18,38 @@ export default function DashboardLayout({ children, userState, setUserState, act
     return (
         <div className="min-h-screen bg-black text-white flex font-sans overflow-hidden">
 
+            {/* Mobile Overlay */}
+            <AnimatePresence>
+                {sidebarOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => setSidebarOpen(false)}
+                        className="fixed inset-0 bg-black/80 z-20 md:hidden"
+                    />
+                )}
+            </AnimatePresence>
+
             {/* Sidebar Protocol */}
             <motion.aside
-                initial={{ width: 0, opacity: 0 }}
-                animate={{ width: sidebarOpen ? 300 : 0, opacity: sidebarOpen ? 1 : 0 }}
-                className="h-screen bg-black border-r border-border flex-shrink-0 flex flex-col z-20"
+                initial={{ width: 0, opacity: 0, x: -300 }}
+                animate={{
+                    width: sidebarOpen ? 300 : 0,
+                    opacity: sidebarOpen ? 1 : 0,
+                    x: sidebarOpen ? 0 : -300
+                }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+                className={`fixed md:static h-full bg-black border-r border-border flex-shrink-0 flex flex-col z-30 shadow-2xl md:shadow-none`}
             >
                 <div className="p-6 border-b border-border flex items-center gap-3">
                     <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center">
                         <div className="w-2 h-2 bg-black rounded-full" />
                     </div>
                     <span className="font-mono text-xs tracking-widest uppercase text-text-muted">GIGAI</span>
+                    <button onClick={() => setSidebarOpen(false)} className="ml-auto md:hidden text-zinc-500">
+                        <Settings size={16} />
+                    </button>
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-6 space-y-8 scrollbar-thin">
@@ -83,17 +104,19 @@ export default function DashboardLayout({ children, userState, setUserState, act
             </motion.aside>
 
             {/* Main Stage */}
-            <main className="flex-1 h-screen overflow-y-auto bg-background bg-grid-pattern relative">
+            <main className="flex-1 h-screen overflow-y-auto bg-background bg-grid-pattern relative w-full">
                 <header className="sticky top-0 z-10 bg-black/80 backdrop-blur border-b border-border p-4 flex items-center justify-between">
-                    <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-text-muted hover:text-white"><Settings size={18} /></button>
+                    <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-text-muted hover:text-white">
+                        <Terminal size={20} />
+                    </button>
                     <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono text-text-muted">GIGAI_COMMAND_CENTER</span>
+                        <span className="text-xs font-mono text-text-muted hidden sm:inline-block">GIGAI_COMMAND_CENTER</span>
                         <span className="px-1.5 py-0.5 bg-primary/20 text-primary text-[9px] font-bold rounded border border-primary/20">BETA</span>
                     </div>
                     <div className="w-8" />
                 </header>
 
-                <div className="p-8 max-w-7xl mx-auto">
+                <div className="p-4 md:p-8 max-w-7xl mx-auto">
                     {children}
                 </div>
             </main>

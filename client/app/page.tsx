@@ -76,11 +76,11 @@ export default function Home() {
             exit={{ opacity: 0, y: -10 }}
             className="space-y-8"
           >
-            <div className="relative group">
+            <div className="relative group flex flex-col md:block">
               <input
                 value={userState.interests}
                 onChange={e => setUserState({ ...userState, interests: e.target.value })}
-                className="w-full bg-surface border border-border p-6 pr-48 rounded-xl text-xl outline-none focus:border-primary transition-all placeholder:text-text-muted/20"
+                className="w-full bg-surface border border-border p-4 md:p-6 pr-0 md:pr-48 rounded-xl text-lg md:text-xl outline-none focus:border-primary transition-all placeholder:text-text-muted/20"
                 placeholder="Target Protocol (e.g. AI Agents, DeFi...)"
               />
               <button
@@ -92,7 +92,7 @@ export default function Home() {
                   interests: userState.interests
                 })}
                 disabled={loading}
-                className="absolute right-3 top-3 bottom-3 bg-white text-black hover:bg-zinc-200 px-8 rounded-lg font-bold tracking-wide transition-all disabled:opacity-50 flex items-center gap-2"
+                className="mt-3 md:mt-0 md:absolute md:right-3 md:top-3 md:bottom-3 bg-white text-black hover:bg-zinc-200 w-full md:w-auto py-3 md:py-0 px-8 rounded-lg font-bold tracking-wide transition-all disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {loading ? <Loader2 className="animate-spin" /> : <>GENERATE <ArrowRight size={18} /></>}
               </button>
