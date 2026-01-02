@@ -26,10 +26,10 @@ export default function ContributeScreen() {
                         className="bg-white px-5 py-2 rounded-full flex-row items-center gap-2"
                     >
                         {loading ? <ActivityIndicator color="black" size="small" /> : (
-                            <>
+                            <View className="flex-row items-center gap-2">
                                 <Radar size={14} color="black" />
                                 <Text className="text-black font-bold text-[10px] uppercase tracking-widest">Scan</Text>
-                            </>
+                            </View>
                         )}
                     </TouchableOpacity>
                 </View>

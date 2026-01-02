@@ -27,6 +27,7 @@ export default function SignupScreen() {
             email,
             password,
             options: {
+                emailRedirectTo: 'gigai-mobile://auth-callback',
                 data: {
                     username: username,
                     full_name: username
@@ -126,10 +127,10 @@ export default function SignupScreen() {
                         className="bg-white py-5 rounded-2xl flex-row justify-center items-center gap-3 mt-4"
                     >
                         {loading ? <ActivityIndicator color="black" /> : (
-                            <>
+                            <View className="flex-row items-center gap-3">
                                 <Text className="font-bold text-black uppercase tracking-[2px] text-xs">Sign Up</Text>
                                 <ArrowRight size={18} color="black" />
-                            </>
+                            </View>
                         )}
                     </TouchableOpacity>
                 </View>

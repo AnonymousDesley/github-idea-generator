@@ -6,16 +6,24 @@ import { Platform } from 'react-native';
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
 
+if (!supabaseUrl || !supabaseAnonKey) {
+    console.error('Supabase credentials missing! Check your .env file.');
+} else {
+    console.log('Supabase client initialized with URL:', supabaseUrl.substring(0, 20) + '...');
+    console.log('URL Length:', supabaseUrl.length);
+    console.log('Key Length:', supabaseAnonKey.length);
+}
+
 // Custom storage implementation using Expo SecureStore
 const ExpoSecureStoreAdapter = {
     getItem: (key: string) => {
         return SecureStore.getItemAsync(key);
     },
     setItem: (key: string, value: string) => {
-        SecureStore.setItemAsync(key, value);
+        return SecureStore.setItemAsync(key, value);
     },
     removeItem: (key: string) => {
-        SecureStore.deleteItemAsync(key);
+        return SecureStore.deleteItemAsync(key);
     },
 };
 

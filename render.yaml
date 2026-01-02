@@ -10,10 +10,10 @@ services:
       - key: PORT
         value: 5000
       - key: SUPABASE_URL
-        fromEnvVar: SUPABASE_URL
+        value: "https://your-project.supabase.co"
       - key: SUPABASE_ANON_KEY
-        fromEnvVar: SUPABASE_ANON_KEY
+        value: "your-anon-key"
       - key: GEMINI_API_KEY
-        fromEnvVar: GEMINI_API_KEY
+        value: "your-gemini-key"
       - key: GITHUB_TOKEN
-        fromEnvVar: GITHUB_TOKEN
+        value: "your-github-token"

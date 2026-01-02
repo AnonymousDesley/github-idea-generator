@@ -76,7 +76,7 @@ export default function LoginScreen() {
                     <View className="mb-6 relative">
                         <View className="w-24 h-24 bg-zinc-950 border border-zinc-800 rounded-3xl items-center justify-center rotate-3 overflow-hidden shadow-2xl shadow-primary/20">
                             <Image
-                                source={require('../../assets/images/logo.png')}
+                                source={require('../../../assets/images/logo.png')}
                                 className="w-20 h-20 -rotate-3"
                                 resizeMode="contain"
                             />
@@ -122,10 +122,10 @@ export default function LoginScreen() {
                         className="bg-white py-5 rounded-2xl flex-row justify-center items-center gap-3 mt-2"
                     >
                         {loading ? <ActivityIndicator color="black" /> : (
-                            <>
+                            <View className="flex-row items-center gap-3">
                                 <Text className="font-bold text-black uppercase tracking-[2px] text-xs">Log In</Text>
                                 <ArrowRight size={18} color="black" />
-                            </>
+                            </View>
                         )}
                     </TouchableOpacity>
                 </View>
