@@ -76,7 +76,7 @@ export default function LoginScreen() {
                     <View className="mb-6 relative">
                         <View className="w-24 h-24 bg-zinc-950 border border-zinc-800 rounded-3xl items-center justify-center rotate-3 overflow-hidden shadow-2xl shadow-primary/20">
                             <Image
-                                source={require('../../../assets/images/logo.png')}
+                                source={require('../../assets/images/logo.png')}
                                 className="w-20 h-20 -rotate-3"
                                 resizeMode="contain"
                             />
