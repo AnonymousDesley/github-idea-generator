@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import { useRouter, Link } from 'expo-router';
+import { Github } from 'lucide-react-native';
+import { makeRedirectUri } from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
-import { Mail, Lock, Github, Chrome, ArrowRight } from 'lucide-react-native';
+import * as Linking from 'expo-linking';
 
-WebBrowser.maybeCompleteAuthSession();
+WebBrowser.maybeCompleteAuthSession(); // Ensure auth session cleanup
 
 export default function LoginScreen() {
     const [email, setEmail] = useState('');
@@ -18,154 +20,150 @@ export default function LoginScreen() {
         setLoading(true);
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) {
-            Alert.alert('Login Failed', error.message);
+            Alert.alert('Access Denied', error.message);
         } else {
-            router.replace('/(tabs)');
+            router.replace('/');
         }
         setLoading(false);
     };
 
-    const handleOAuth = async (provider: 'github' | 'google') => {
+    const handleOAuth = async (provider: 'google' | 'github') => {
+        console.log(`[OAuth] Attempting ${provider} login`);
         try {
+            const redirectUrl = makeRedirectUri({
+                scheme: 'gigai-mobile',
+                path: 'auth/callback',
+            });
+            console.log(`[OAuth] Generated Redirect URL: ${redirectUrl}`);
+
             const { data, error } = await supabase.auth.signInWithOAuth({
                 provider,
                 options: {
-                    redirectTo: 'gigai-mobile://auth-callback',
+                    redirectTo: redirectUrl,
                     skipBrowserRedirect: true,
                 },
             });
+            console.log('[OAuth] Supabase Response:', { data, error });
 
             if (error) throw error;
 
             if (data?.url) {
-                const result = await WebBrowser.openAuthSessionAsync(data.url, 'gigai-mobile://auth-callback');
+                const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
+
                 if (result.type === 'success' && result.url) {
-                    const params = new URL(result.url).searchParams;
-                    const access_token = params.get('access_token');
-                    const refresh_token = params.get('refresh_token');
+                    const { queryParams } = Linking.parse(result.url);
+
+                    const access_token = queryParams?.access_token as string;
+                    const refresh_token = queryParams?.refresh_token as string;
 
                     if (access_token && refresh_token) {
-                        await supabase.auth.setSession({ access_token, refresh_token });
-                        router.replace('/(tabs)');
+                        const { error: sessionError } = await supabase.auth.setSession({
+                            access_token,
+                            refresh_token,
+                        });
+                        if (sessionError) throw sessionError;
+                        router.replace('/');
                     }
                 }
             }
         } catch (error: any) {
-            Alert.alert('OAuth Error', error.message);
+            console.error('[OAuth] Error:', error);
+            Alert.alert('Authentication Error', error.message);
         }
     };
 
     return (
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-black">
-            {/* Background Grid */}
-            <View className="absolute inset-0 opacity-40">
-                <View className="absolute inset-0 flex-row justify-around">
-                    {[...Array(12)].map((_, i) => (
-                        <View key={i} className="w-[1px] h-full bg-zinc-900" />
-                    ))}
-                </View>
-                <View className="absolute inset-0 flex-column justify-around">
-                    {[...Array(24)].map((_, i) => (
-                        <View key={i} className="h-[1px] w-full bg-zinc-900" />
-                    ))}
-                </View>
-            </View>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-transparent">
+            <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }} className="p-8 bg-transparent">
 
-            <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }} className="p-6">
-                <View className="mb-12 items-center">
-                    <View className="mb-6 relative">
-                        <View className="w-24 h-24 bg-zinc-950 border border-zinc-800 rounded-3xl items-center justify-center rotate-3 overflow-hidden shadow-2xl shadow-primary/20">
-                            <Image
-                                source={require('../../assets/images/logo.png')}
-                                className="w-20 h-20 -rotate-3"
-                                resizeMode="contain"
-                            />
-                        </View>
-                        <View className="absolute -bottom-1 -right-1 w-5 h-5 bg-primary rounded-full border-4 border-black" />
-                    </View>
-                    <Text className="text-4xl font-bold text-white tracking-tighter mb-1">GIGAI</Text>
-                    <Text className="text-zinc-500 font-mono text-[10px] uppercase tracking-[2px]">GitHub projects idea generator</Text>
+                {/* 1. Centered Logo */}
+                <View className="items-center mb-12">
+                    <Image
+                        source={require('../../assets/images/logo.png')}
+                        className="w-12 h-12"
+                        resizeMode="contain"
+                    />
                 </View>
 
-                <View className="gap-5 mb-6">
-                    <View className="relative">
-                        <View className="absolute left-5 top-5 z-10">
-                            <Mail size={18} color="#52525b" />
-                        </View>
-                        <TextInput
-                            value={email}
-                            onChangeText={setEmail}
-                            placeholder="EMAIL ADDRESS"
-                            placeholderTextColor="#3f3f46"
-                            autoCapitalize="none"
-                            className="bg-zinc-950 border border-zinc-800 p-5 pl-14 rounded-2xl text-white font-mono text-xs focus:border-primary"
+                {/* 2. Heading */}
+                <Text className="text-3xl font-bold text-white mb-8 text-center tracking-tight">
+                    Login to GIGAI
+                </Text>
+
+                <View className="space-y-4 w-full max-w-sm mx-auto">
+                    {/* 3. OAuth Buttons (Pill-shaped) */}
+                    <TouchableOpacity
+                        onPress={() => handleOAuth('google')}
+                        className="bg-white py-3 rounded-full flex-row items-center justify-center gap-2 active:opacity-90"
+                    >
+                        <Image
+                            source={{ uri: 'https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg' }}
+                            style={{ width: 18, height: 18 }}
                         />
+                        <Text className="text-black font-bold text-sm">Sign in with Google</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        onPress={() => handleOAuth('github')}
+                        className="bg-white py-3 rounded-full flex-row items-center justify-center gap-2 active:opacity-90"
+                    >
+                        <Github size={18} color="black" />
+                        <Text className="text-black font-bold text-sm">Sign in with GitHub</Text>
+                    </TouchableOpacity>
+
+                    {/* 4. Divider */}
+                    <View className="flex-row items-center gap-3 py-2">
+                        <View className="flex-1 h-[1px] bg-zinc-800" />
+                        <Text className="text-zinc-500 text-xs">or</Text>
+                        <View className="flex-1 h-[1px] bg-zinc-800" />
                     </View>
 
-                    <View className="relative">
-                        <View className="absolute left-5 top-5 z-10">
-                            <Lock size={18} color="#52525b" />
-                        </View>
-                        <TextInput
-                            value={password}
-                            onChangeText={setPassword}
-                            placeholder="PASSWORD"
-                            placeholderTextColor="#3f3f46"
-                            secureTextEntry
-                            className="bg-zinc-950 border border-zinc-800 p-5 pl-14 rounded-2xl text-white font-mono text-xs focus:border-primary"
-                        />
-                    </View>
+                    {/* 5. Minimalist Inputs */}
+                    <TextInput
+                        value={email}
+                        onChangeText={setEmail}
+                        placeholder="Phone, email, or username"
+                        placeholderTextColor="#71717a"
+                        autoCapitalize="none"
+                        className="bg-black border border-zinc-800 rounded px-4 py-4 text-white text-base focus:border-primary"
+                    />
 
+                    <TextInput
+                        value={password}
+                        onChangeText={setPassword}
+                        placeholder="Password"
+                        placeholderTextColor="#71717a"
+                        secureTextEntry
+                        className="bg-black border border-zinc-800 rounded px-4 py-4 text-white text-base focus:border-primary"
+                    />
+
+                    {/* 6. Login Button (Pill-shaped, inverted contrast if needed, or white text) */}
                     <TouchableOpacity
                         onPress={handleLogin}
                         disabled={loading}
-                        className="bg-white py-5 rounded-2xl flex-row justify-center items-center gap-3 mt-2"
+                        className="bg-white py-3 rounded-full items-center justify-center mt-2 active:opacity-90"
                     >
                         {loading ? <ActivityIndicator color="black" /> : (
-                            <View className="flex-row items-center gap-3">
-                                <Text className="font-bold text-black uppercase tracking-[2px] text-xs">Log In</Text>
-                                <ArrowRight size={18} color="black" />
-                            </View>
+                            <Text className="text-black font-bold text-sm">Next</Text>
                         )}
                     </TouchableOpacity>
-                </View>
 
-                <TouchableOpacity className="items-end mb-10 px-1">
-                    <Text className="text-zinc-500 font-mono text-[10px] tracking-wide uppercase">Forgot password?</Text>
-                </TouchableOpacity>
-
-                <View className="flex-row items-center gap-6 mb-10">
-                    <View className="flex-1 h-[1px] bg-zinc-900" />
-                    <Text className="text-zinc-600 font-mono text-[8px] tracking-[2px]">OR CONTINUE WITH</Text>
-                    <View className="flex-1 h-[1px] bg-zinc-900" />
-                </View>
-
-                <View className="flex-row gap-4 mb-10">
-                    <TouchableOpacity
-                        onPress={() => handleOAuth('github')}
-                        className="flex-1 bg-zinc-950 border border-zinc-800 py-4 rounded-2xl items-center justify-center flex-row gap-3"
-                    >
-                        <Github size={18} color="#FFFFFF" />
-                        <Text className="text-white font-mono text-[10px] tracking-wider">GITHUB</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        onPress={() => handleOAuth('google')}
-                        className="flex-1 bg-zinc-950 border border-zinc-800 py-4 rounded-2xl items-center justify-center flex-row gap-3"
-                    >
-                        <Chrome size={18} color="#EA4335" />
-                        <Text className="text-white font-mono text-[10px] tracking-wider">GOOGLE</Text>
+                    {/* Forgot Password */}
+                    <TouchableOpacity className="items-center mt-4">
+                        <Text className="text-white font-bold text-xs border border-zinc-800 px-4 py-1 rounded-full">Forgot password?</Text>
                     </TouchableOpacity>
                 </View>
 
-                <View className="items-center">
+                {/* Footer */}
+                <View className="mt-auto pt-10 flex-row justify-center gap-1">
+                    <Text className="text-zinc-500 text-sm">Don't have an account?</Text>
                     <Link href="/auth/signup" asChild>
                         <TouchableOpacity>
-                            <Text className="text-zinc-500 font-mono text-[10px] tracking-wide">
-                                NO ACCOUNT YET? <Text className="text-primary font-bold">SIGN UP</Text>
-                            </Text>
+                            <Text className="text-primary text-sm">Sign up</Text>
                         </TouchableOpacity>
                     </Link>
                 </View>
+
             </ScrollView>
         </KeyboardAvoidingView>
     );

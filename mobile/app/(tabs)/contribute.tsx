@@ -17,7 +17,7 @@ export default function ContributeScreen() {
                 {/* Protocol Header */}
                 <View className="mb-10 flex-row justify-between items-end">
                     <View>
-                        <Text className="text-zinc-500 font-mono text-[10px] uppercase tracking-[4px] mb-1">Module: OSS_RECON</Text>
+                        <Text className="text-zinc-500 font-mono text-[10px] uppercase tracking-widest mb-1">Module: OSS_RECON</Text>
                         <Text className="text-3xl font-bold text-white tracking-tighter">OS <Text className="text-primary italic">RECON</Text></Text>
                     </View>
                     <TouchableOpacity
@@ -76,7 +76,7 @@ export default function ContributeScreen() {
                         !loading && (
                             <View className="py-20 items-center justify-center border border-dashed border-zinc-800 rounded-3xl">
                                 <Github color="#18181b" size={40} className="mb-4" />
-                                <Text className="text-zinc-600 font-mono text-[10px] uppercase tracking-[2px]">Awaiting Scan Initiation...</Text>
+                                <Text className="text-zinc-600 font-mono text-[10px] uppercase tracking-wider">Awaiting Scan Initiation...</Text>
                             </View>
                         )
                     )}

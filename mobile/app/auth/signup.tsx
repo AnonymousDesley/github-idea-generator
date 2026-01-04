@@ -1,149 +1,187 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import { useRouter, Link } from 'expo-router';
-import { Mail, Lock, User, ArrowRight } from 'lucide-react-native';
+import { Save, Github } from 'lucide-react-native';
+import { makeRedirectUri } from 'expo-auth-session';
+import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
+
+WebBrowser.maybeCompleteAuthSession();
 
 export default function SignupScreen() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
     const [username, setUsername] = useState('');
     const [loading, setLoading] = useState(false);
     const router = useRouter();
 
     const handleSignup = async () => {
         if (!email || !password || !username) {
-            Alert.alert('Missing Info', 'Please fill in all fields.');
+            Alert.alert('Error', 'MISSING_FIELDS');
             return;
         }
-        if (password !== confirmPassword) {
-            Alert.alert('Passwords Mismatch', 'Passwords do not match.');
-            return;
-        }
-
         setLoading(true);
         const { error } = await supabase.auth.signUp({
             email,
             password,
             options: {
-                emailRedirectTo: 'gigai-mobile://auth-callback',
-                data: {
-                    username: username,
-                    full_name: username
-                }
+                data: { username, full_name: username }
             }
         });
         if (error) {
-            Alert.alert('Signup Failed', error.message);
+            Alert.alert('Write Failed', error.message);
         } else {
-            Alert.alert('Account Created', 'Please check your email to verify your account.');
+            Alert.alert('Identity Created', 'VERIFICATION_REQUIRED');
             router.replace('/auth/login');
         }
         setLoading(false);
     };
 
+    const handleOAuth = async (provider: 'google' | 'github') => {
+        console.log(`[OAuth] Attempting ${provider} sign-in`);
+        try {
+            const redirectUrl = makeRedirectUri({
+                scheme: 'gigai-mobile',
+                path: 'auth/callback',
+            });
+            console.log(`[OAuth] Generated Redirect URL: ${redirectUrl}`);
+
+            const { data, error } = await supabase.auth.signInWithOAuth({
+                provider,
+                options: {
+                    redirectTo: redirectUrl,
+                    skipBrowserRedirect: true,
+                },
+            });
+            console.log('[OAuth] Supabase Response:', { data, error });
+
+            if (error) throw error;
+
+            if (data?.url) {
+                const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
+
+                if (result.type === 'success' && result.url) {
+                    const { queryParams } = Linking.parse(result.url);
+
+                    const access_token = queryParams?.access_token as string;
+                    const refresh_token = queryParams?.refresh_token as string;
+
+                    if (access_token && refresh_token) {
+                        const { error: sessionError } = await supabase.auth.setSession({
+                            access_token,
+                            refresh_token,
+                        });
+                        if (sessionError) throw sessionError;
+                        router.replace('/');
+                    }
+                }
+            }
+        } catch (error: any) {
+            console.error('[OAuth] Error:', error);
+            Alert.alert('Authentication Error', error.message);
+        }
+    };
+
     return (
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-black">
-            {/* Background Grid */}
-            <View className="absolute inset-0 opacity-40">
-                <View className="absolute inset-0 flex-row justify-around">
-                    {[...Array(12)].map((_, i) => (
-                        <View key={i} className="w-[1px] h-full bg-zinc-900" />
-                    ))}
-                </View>
-                <View className="absolute inset-0 flex-column justify-around">
-                    {[...Array(24)].map((_, i) => (
-                        <View key={i} className="h-[1px] w-full bg-zinc-900" />
-                    ))}
-                </View>
-            </View>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-transparent">
+            <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }} className="p-8 bg-transparent">
 
-            <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }} className="p-6">
-                <View className="mb-12 items-center">
-                    <Text className="text-4xl font-bold text-white tracking-tighter mb-1">CREATE <Text className="text-primary italic">ACCOUNT</Text></Text>
-                    <Text className="text-zinc-500 font-mono text-[10px] uppercase tracking-[6px]">Join the Network</Text>
+                {/* 1. Centered Logo */}
+                <View className="items-center mb-12">
+                    <Image
+                        source={require('../../assets/images/logo.png')}
+                        className="w-12 h-12"
+                        resizeMode="contain"
+                    />
                 </View>
 
-                <View className="gap-5 mb-10">
-                    <View className="relative">
-                        <View className="absolute left-5 top-5 z-10">
-                            <User size={18} color="#52525b" />
-                        </View>
-                        <TextInput
-                            value={username}
-                            onChangeText={setUsername}
-                            placeholder="USERNAME"
-                            placeholderTextColor="#3f3f46"
-                            className="bg-zinc-950 border border-zinc-800 p-5 pl-14 rounded-2xl text-white font-mono text-xs focus:border-primary"
+                {/* 2. Heading */}
+                <Text className="text-3xl font-bold text-white mb-8 text-center tracking-tight">
+                    Join GIGAI today.
+                </Text>
+
+                <View className="space-y-4 w-full max-w-sm mx-auto">
+                    {/* 3. OAuth Buttons (Pill-shaped) */}
+                    <TouchableOpacity
+                        onPress={() => handleOAuth('google')}
+                        className="bg-white py-3 rounded-full flex-row items-center justify-center gap-2 active:opacity-90"
+                    >
+                        <Image
+                            source={{ uri: 'https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg' }}
+                            style={{ width: 18, height: 18 }}
                         />
+                        <Text className="text-black font-bold text-sm">Sign up with Google</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        onPress={() => handleOAuth('github')}
+                        className="bg-white py-3 rounded-full flex-row items-center justify-center gap-2 active:opacity-90"
+                    >
+                        <Github size={18} color="black" />
+                        <Text className="text-black font-bold text-sm">Sign up with GitHub</Text>
+                    </TouchableOpacity>
+
+                    {/* 4. Divider */}
+                    <View className="flex-row items-center gap-3 py-2">
+                        <View className="flex-1 h-[1px] bg-zinc-800" />
+                        <Text className="text-zinc-500 text-xs">or</Text>
+                        <View className="flex-1 h-[1px] bg-zinc-800" />
                     </View>
 
-                    <View className="relative">
-                        <View className="absolute left-5 top-5 z-10">
-                            <Mail size={18} color="#52525b" />
-                        </View>
-                        <TextInput
-                            value={email}
-                            onChangeText={setEmail}
-                            placeholder="EMAIL ADDRESS"
-                            placeholderTextColor="#3f3f46"
-                            autoCapitalize="none"
-                            className="bg-zinc-950 border border-zinc-800 p-5 pl-14 rounded-2xl text-white font-mono text-xs focus:border-primary"
-                        />
-                    </View>
+                    {/* 5. Minimalist Inputs */}
+                    <TextInput
+                        value={username}
+                        onChangeText={setUsername}
+                        placeholder="Name"
+                        placeholderTextColor="#71717a"
+                        className="bg-black border border-zinc-800 rounded px-4 py-4 text-white text-base focus:border-primary"
+                    />
 
-                    <View className="relative">
-                        <View className="absolute left-5 top-5 z-10">
-                            <Lock size={18} color="#52525b" />
-                        </View>
-                        <TextInput
-                            value={password}
-                            onChangeText={setPassword}
-                            placeholder="PASSWORD"
-                            placeholderTextColor="#3f3f46"
-                            secureTextEntry
-                            className="bg-zinc-950 border border-zinc-800 p-5 pl-14 rounded-2xl text-white font-mono text-xs focus:border-primary"
-                        />
-                    </View>
+                    <TextInput
+                        value={email}
+                        onChangeText={setEmail}
+                        placeholder="Email"
+                        placeholderTextColor="#71717a"
+                        autoCapitalize="none"
+                        className="bg-black border border-zinc-800 rounded px-4 py-4 text-white text-base focus:border-primary"
+                    />
 
-                    <View className="relative">
-                        <View className="absolute left-5 top-5 z-10">
-                            <Lock size={18} color="#52525b" />
-                        </View>
-                        <TextInput
-                            value={confirmPassword}
-                            onChangeText={setConfirmPassword}
-                            placeholder="CONFIRM PASSWORD"
-                            placeholderTextColor="#3f3f46"
-                            secureTextEntry
-                            className="bg-zinc-950 border border-zinc-800 p-5 pl-14 rounded-2xl text-white font-mono text-xs focus:border-primary"
-                        />
-                    </View>
+                    <TextInput
+                        value={password}
+                        onChangeText={setPassword}
+                        placeholder="Password"
+                        placeholderTextColor="#71717a"
+                        secureTextEntry
+                        className="bg-black border border-zinc-800 rounded px-4 py-4 text-white text-base focus:border-primary"
+                    />
 
+                    {/* 6. Create Account Button */}
                     <TouchableOpacity
                         onPress={handleSignup}
                         disabled={loading}
-                        className="bg-white py-5 rounded-2xl flex-row justify-center items-center gap-3 mt-4"
+                        className="bg-white py-3 rounded-full items-center justify-center mt-2 active:opacity-90"
                     >
                         {loading ? <ActivityIndicator color="black" /> : (
-                            <View className="flex-row items-center gap-3">
-                                <Text className="font-bold text-black uppercase tracking-[2px] text-xs">Sign Up</Text>
-                                <ArrowRight size={18} color="black" />
-                            </View>
+                            <Text className="text-black font-bold text-sm">Create account</Text>
                         )}
                     </TouchableOpacity>
+
+                    <Text className="text-zinc-600 text-xs mt-2 text-center leading-relaxed">
+                        By signing up, you agree to our Terms of Service and Privacy Policy, including Cookie Use.
+                    </Text>
                 </View>
 
-                <View className="items-center">
+                {/* Footer */}
+                <View className="mt-auto pt-10 flex-row justify-center gap-1">
+                    <Text className="text-zinc-500 text-sm">Have an account already?</Text>
                     <Link href="/auth/login" asChild>
                         <TouchableOpacity>
-                            <Text className="text-zinc-500 font-mono text-[10px] tracking-wide">
-                                ALREADY HAVE AN ACCOUNT? <Text className="text-primary font-bold">LOG IN</Text>
-                            </Text>
+                            <Text className="text-primary text-sm">Log in</Text>
                         </TouchableOpacity>
                     </Link>
                 </View>
+
             </ScrollView>
         </KeyboardAvoidingView>
     );

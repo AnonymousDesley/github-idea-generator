@@ -1,20 +1,19 @@
 services:
   - type: web
     name: gigai-backend
-    env: node
-    plan: free
+    runtime: node
     buildCommand: npm install
-    startCommand: npm start
+    startCommand: node server.js
     envVars:
-      - key: NODE_VERSION
-        value: 18.0.0
       - key: PORT
         value: 5000
-      - key: SUPABASE_URL
-        value: "https://your-project.supabase.co"
-      - key: SUPABASE_ANON_KEY
-        value: "your-anon-key"
-      - key: GEMINI_API_KEY
-        value: "your-gemini-key"
       - key: GITHUB_TOKEN
-        value: "your-github-token"
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: EXPO_PUBLIC_API_URL
+        value: https://gigai-backend.onrender.com/api/github

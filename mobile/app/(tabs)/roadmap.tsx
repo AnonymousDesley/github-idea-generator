@@ -17,7 +17,7 @@ export default function RoadmapScreen() {
             <ScrollView className="flex-1 p-6" contentContainerStyle={{ paddingBottom: 100 }}>
                 {/* Protocol Header */}
                 <View className="mb-10">
-                    <Text className="text-zinc-500 font-mono text-[10px] uppercase tracking-[4px] mb-1">Module: PATH_FINDER</Text>
+                    <Text className="text-zinc-500 font-mono text-[10px] uppercase tracking-widest mb-1">Module: PATH_FINDER</Text>
                     <Text className="text-3xl font-bold text-white tracking-tighter">LEARNING <Text className="text-primary italic">PATH</Text></Text>
                 </View>
 
@@ -61,7 +61,7 @@ export default function RoadmapScreen() {
                     !loading && (
                         <View className="py-20 items-center justify-center border border-dashed border-zinc-800 rounded-3xl">
                             <BookOpen color="#18181b" size={40} className="mb-4" />
-                            <Text className="text-zinc-600 font-mono text-[10px] uppercase tracking-[2px]">Awaiting Objective...</Text>
+                            <Text className="text-zinc-600 font-mono text-[10px] uppercase tracking-wider">Awaiting Objective...</Text>
                         </View>
                     )
                 )}

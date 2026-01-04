@@ -1,82 +1,77 @@
-import { useState, useCallback } from 'react';
-import axios from 'axios';
-import { API_URL } from '../constants/Config';
+import { useState } from "react";
+import axios from "axios";
+import { Alert } from "react-native";
+import { ProjectIdea, ContributionIssue, SuggestResponse, SuggestRequest } from "../types/api";
 
-export interface ProjectIdea {
-    title: string;
-    description: string;
-    tech_stack: string[] | any;
-    difficulty: string;
-    estimated_time: string;
+// Use machine IP for Android emulator (10.0.2.2) or local IP, fallback to hosted URL
+let API_BASE = process.env.EXPO_PUBLIC_API_URL || "http://10.0.2.2:5000";
+if (!API_BASE.endsWith('/api/github')) {
+    API_BASE = API_BASE.replace(/\/$/, '') + '/api/github';
 }
+console.log('[DEBUG] GIGAI API_BASE:', API_BASE);
 
 export const useGIGAI = () => {
     const [loading, setLoading] = useState(false);
     const [ideas, setIdeas] = useState<ProjectIdea[]>([]);
-    const [roadmap, setRoadmap] = useState<string | null>(null);
-    const [issues, setIssues] = useState<any[]>([]);
-    const [explanation, setExplanation] = useState<string | null>(null);
+    const [roadmap, setRoadmap] = useState<string>("");
+    const [issues, setIssues] = useState<ContributionIssue[]>([]);
+    const [explanation, setExplanation] = useState<string>("");
 
-    const suggestIdeas = useCallback(async (userData: any) => {
+    const suggestIdeas = async (payload: SuggestRequest) => {
         setLoading(true);
+        const fullUrl = `${API_BASE}/suggest`;
+        console.log('[API] Suggesting ideas. URL:', fullUrl);
+        console.log('[API] Payload:', payload);
         try {
-            const response = await axios.post(`${API_URL}/github/suggest`, userData);
-            setIdeas(response.data.ideas);
-        } catch (error) {
-            console.error('Suggest Ideas Error:', error);
+            const res = await axios.post(fullUrl, payload);
+            if (res.data.success) {
+                setIdeas(res.data.ideas);
+            } else {
+                Alert.alert('Generation Error', res.data.error || 'Failed to generate ideas.');
+            }
+        } catch (error: any) {
+            console.error('[API] Suggest Error:', error.response?.data || error.message);
+            Alert.alert('Connection Error', `Failed to reach core: ${error.message}`);
         } finally {
             setLoading(false);
         }
-    }, []);
+    };
 
-    const generateRoadmap = useCallback(async (topic: string) => {
+    const generateRoadmap = async (topic: string) => {
         setLoading(true);
         try {
-            const response = await axios.post(`${API_URL}/github/roadmap`, { topic });
-            setRoadmap(response.data.roadmap);
+            const res = await axios.post(`${API_BASE}/roadmap`, { topic });
+            setRoadmap(res.data.roadmap);
         } catch (error) {
-            console.error('Roadmap Error:', error);
+            console.error(error);
         } finally {
             setLoading(false);
         }
-    }, []);
+    };
 
-    const findContributions = useCallback(async (languages: string[]) => {
+    const explainer = async (url: string, context: string) => {
         setLoading(true);
         try {
-            const response = await axios.post(`${API_URL}/github/contribute`, { languages });
-            setIssues(response.data.issues);
+            const res = await axios.post(`${API_BASE}/explain`, { url, user_context: context });
+            setExplanation(res.data.explanation);
         } catch (error) {
-            console.error('Contributions Error:', error);
+            console.error(error);
         } finally {
             setLoading(false);
         }
-    }, []);
+    };
 
-    const explainer = useCallback(async (url: string, user_id?: string) => {
+    const findContributions = async (languages: string[]) => {
         setLoading(true);
         try {
-            const response = await axios.post(`${API_URL}/github/explain`, { url, user_id });
-            setExplanation(response.data.explanation);
+            const res = await axios.post(`${API_BASE}/contribute`, { languages });
+            setIssues(res.data.issues);
         } catch (error) {
-            console.error('Explainer Error:', error);
+            console.error(error);
         } finally {
             setLoading(false);
         }
-    }, []);
-
-    const elaborateProject = useCallback(async (project: any) => {
-        setLoading(true);
-        try {
-            const response = await axios.post(`${API_URL}/github/elaborate`, project);
-            return response.data.spec;
-        } catch (error) {
-            console.error('Elaborate Error:', error);
-            return null;
-        } finally {
-            setLoading(false);
-        }
-    }, []);
+    };
 
     return {
         loading,
@@ -87,9 +82,8 @@ export const useGIGAI = () => {
         actions: {
             suggestIdeas,
             generateRoadmap,
-            findContributions,
             explainer,
-            elaborateProject
+            findContributions
         }
     };
 };

@@ -1,62 +1,58 @@
-import { Stack, useRouter, useSegments } from 'expo-router';
-import { View, ActivityIndicator } from 'react-native';
+import { DarkTheme, ThemeProvider } from '@react-navigation/native';
+import { Stack } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
+import { useEffect } from 'react';
+import 'react-native-reanimated';
+import { useColorScheme } from '../hooks/useColorScheme';
+import { View, StyleSheet, StatusBar } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { useEffect, useState } from 'react';
-import { supabase } from '../lib/supabase';
-import { Session } from '@supabase/supabase-js';
+import BackgroundGrid from '../components/BackgroundGrid';
 
-export default function Layout() {
-    const [session, setSession] = useState<Session | null>(null);
-    const [initialized, setInitialized] = useState(false);
-    const segments = useSegments();
-    const router = useRouter();
+// Prevent the splash screen from auto-hiding before asset loading is complete.
+SplashScreen.preventAutoHideAsync();
 
-    useEffect(() => {
-        // Initial session check
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setSession(session);
-            setInitialized(true);
-        });
-
-        // Listen for auth changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            setSession(session);
-        });
-
-        return () => subscription.unsubscribe();
-    }, []);
+export default function RootLayout() {
+    const colorScheme = useColorScheme();
+    const loaded = true; // Synced with system fonts
 
     useEffect(() => {
-        if (!initialized) return;
-
-        const inAuthGroup = segments[0] === 'auth';
-
-        if (!session && !inAuthGroup) {
-            // Redirect to login if not authenticated and not in auth group
-            router.replace('/auth/login');
-        } else if (session && inAuthGroup) {
-            // Redirect to home if authenticated and in auth group
-            router.replace('/(tabs)');
+        if (loaded) {
+            SplashScreen.hideAsync();
         }
-    }, [session, initialized, segments]);
+    }, [loaded]);
 
-    if (!initialized) {
-        return (
-            <View className="flex-1 bg-black items-center justify-center">
-                <ActivityIndicator color="white" />
-            </View>
-        );
+    if (!loaded) {
+        return null;
     }
 
     return (
         <SafeAreaProvider>
-            <View className="flex-1 bg-black">
-                <Stack screenOptions={{ headerShown: false }}>
-                    <Stack.Screen name="auth/login" options={{ headerShown: false }} />
-                    <Stack.Screen name="auth/signup" options={{ headerShown: false }} />
-                    <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                </Stack>
-            </View>
+            <ThemeProvider value={DarkTheme}>
+                <View style={styles.container}>
+                    {/* Layer -10: Background */}
+                    <BackgroundGrid />
+
+                    {/* Layer 1+: Content */}
+                    <Stack screenOptions={{
+                        headerShown: false,
+                        contentStyle: { backgroundColor: 'transparent' }, // Transparent to show grid
+                        animation: 'fade'
+                    }}>
+                        <Stack.Screen name="index" />
+                        <Stack.Screen name="auth/login" />
+                        <Stack.Screen name="auth/signup" />
+                        <Stack.Screen name="+not-found" />
+                    </Stack>
+                    <StatusBar barStyle="light-content" />
+                </View>
+            </ThemeProvider>
         </SafeAreaProvider>
     );
 }
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#000000',
+    },
+});
